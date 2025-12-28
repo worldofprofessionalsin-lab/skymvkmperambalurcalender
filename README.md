@@ -10,17 +10,6 @@ A premium, high-performance event calendar tool designed for the Perambalur Ariv
 - **Data Persistence**: All your events are saved locally in your browser's `localStorage`.
 - **Responsive Design**: Elegant teal-themed UI that works on desktop and mobile.
 
-## 🚀 How to Deploy to GitHub Pages (FREE)
-
-1. **Create a Repository**: Create a new repository on GitHub (e.g., `event-calendar`).
-2. **Upload Files**: Upload the `index.html` file from this project to the root of your repository.
-3. **Enable GitHub Pages**:
-   - Go to **Settings** > **Pages**.
-   - Under **Build and deployment**, set **Source** to "Deploy from a branch".
-   - Select your branch (usually `main`) and the folder `/ (root)`.
-   - Click **Save**.
-4. **Visit Your Tool**: Your tool will be live at `https://[your-username].github.io/[repo-name]/`.
-
 ## Technical Details
 - **Frontend**: HTML5, Tailwind CSS, Vanilla JavaScript.
 - **Libraries**:
@@ -31,3 +20,4 @@ A premium, high-performance event calendar tool designed for the Perambalur Ariv
 
 ## Data Security
 Since this is a serverless application, all event data is stored **locally on your computer** (in your browser). This ensures your data remains private and doesn't require a database server.
+
