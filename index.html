@@ -2,241 +2,300 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Perambalur Arivuthirukovil - Event Hub</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perambalur Arivuthirukovil - Event Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Client-side Export Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/docx@8.1.0/build/index.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <style>
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
 
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+        .day {
+            transition: all 0.2s;
+        }
 
-  <!-- Export -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/docx@8.1.0/build/index.min.js"></script>
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+        .day:hover {
+            transform: scale(1.05);
+        }
 
-  <style>
-    .glass {
-      background: rgba(255, 255, 255, 0.7);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-    }
+        #loginOverlay {
+            transition: opacity 0.5s ease-in-out;
+        }
+    </style>
+</head>
 
-    .day {
-      transition: all 0.2s;
-    }
-
-    .day:hover {
-      transform: scale(1.02);
-    }
-
-    #loginOverlay {
-      transition: opacity 0.5s ease-in-out;
-    }
-  </style>
 </head>
 
 <body class="bg-gradient-to-br from-teal-50 to-emerald-100 min-h-screen font-sans">
-  <div id="app" class="max-w-7xl mx-auto p-4 md:p-8">
-
-    <!-- HEADER -->
-    <header
-      class="flex flex-col md:flex-row justify-between items-center gap-4 md:gap-6 mb-10 glass rounded-2xl p-5 md:p-6 shadow-xl">
-
-      <div class="flex items-center gap-4 w-full md:w-auto justify-center md:justify-start">
-        <div class="w-14 h-14 md:w-16 md:h-16">
-          <img src="images/logo.png" alt="Sky Yoga Logo" class="w-full h-full object-contain">
-        </div>
-
-        <div class="text-center md:text-left">
-          <h1 class="text-2xl font-black text-teal-900 leading-none">Perambalur</h1>
-          <p class="text-teal-600 font-bold text-xs md:text-sm tracking-widest uppercase">
-            Arivuthirukovil
-          </p>
-        </div>
-      </div>
-
-      <!-- BUTTON GROUP -->
-      <div class="flex flex-wrap gap-3 justify-center md:justify-end w-full">
-
-        <button onclick="toggleLanguage()" id="langToggle"
-          class="bg-teal-100 text-teal-800 px-4 py-2 rounded-full font-bold shadow-sm hover:bg-teal-200 transition">
-          <i class="fas fa-language mr-2"></i>
-          <span id="langText">தமிழ்</span>
-        </button>
-
-        <div class="flex bg-white/50 p-1 rounded-full shadow-inner">
-          <button onclick="setView('month')" id="monthViewBtn"
-            class="view-btn active px-3 md:px-4 py-1.5 rounded-full text-xs md:text-sm font-bold transition">
-            Month
-          </button>
-
-          <button onclick="setView('week')" id="weekViewBtn"
-            class="view-btn px-3 md:px-4 py-1.5 rounded-full text-xs md:text-sm font-bold transition">
-            Week
-          </button>
-
-          <button onclick="setView('day')" id="dayViewBtn"
-            class="view-btn px-3 md:px-4 py-1.5 rounded-full text-xs md:text-sm font-bold transition">
-            Day
-          </button>
-
-          <button onclick="setView('chart')" id="chartViewBtn"
-            class="view-btn px-3 md:px-4 py-1.5 rounded-full text-xs md:text-sm font-bold transition">
-            Chart
-          </button>
-        </div>
-
-        <button onclick="toggleAdmin()" id="adminBtn"
-          class="bg-white text-teal-600 px-5 py-2 rounded-full font-bold shadow-md hover:shadow-lg transition">
-          <i class="fas fa-user-shield mr-2"></i>Admin
-        </button>
-
-        <div class="dropdown relative">
-          <button id="exportBtn"
-            class="bg-teal-600 text-white px-6 py-2 rounded-full font-bold shadow-md hover:bg-teal-700 transition">
-            <i class="fas fa-download mr-2"></i>Export
-          </button>
-
-          <div
-            class="dropdown-content absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-2xl hidden z-50 overflow-hidden">
-            <button onclick="exportPDF()" id="pdfExportBtn"
-              class="w-full text-left px-4 py-3 hover:bg-gray-50 border-b font-bold">
-              <i class="fas fa-file-pdf mr-2 text-red-500"></i>PDF Document
-            </button>
-
-            <button onclick="exportWord()" id="wordExportBtn"
-              class="w-full text-left px-4 py-3 hover:bg-gray-50 border-b font-bold">
-              <i class="fas fa-file-word mr-2 text-blue-500"></i>Word File
-            </button>
-
-            <button onclick="exportJPG()" id="jpgExportBtn"
-              class="w-full text-left px-4 py-3 hover:bg-gray-50 font-bold">
-              <i class="fas fa-file-image mr-2 text-green-500"></i>JPG Image
-            </button>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <!-- MAIN GRID -->
-    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-
-      <!-- SIDEBAR -->
-      <aside class="md:col-span-1 space-y-6 order-2 md:order-1">
-
-        <div class="glass p-5 md:p-6 rounded-2xl shadow-lg">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="font-bold text-teal-900">Select Calendars</h3>
-            <button onclick="toggleSettings('calendars')" id="calSettingsBtn"
-              class="text-teal-600 hover:text-teal-800 hidden">
-              <i class="fas fa-cog"></i>
-            </button>
-          </div>
-
-          <div id="calendarFilters" class="space-y-2"></div>
-        </div>
-
-        <div id="adminControls" class="glass p-4 md:p-6 rounded-2xl shadow-lg hidden"></div>
-        <div id="importControls" class="glass p-4 md:p-6 rounded-2xl shadow-lg hidden"></div>
-      </aside>
-
-      <!-- CALENDAR -->
-      <main class="md:col-span-2 lg:col-span-3 order-1 md:order-2">
-        <div class="glass p-6 md:p-8 rounded-3xl shadow-2xl">
-
-          <div class="flex flex-wrap justify-between items-center gap-3 mb-6">
-            <h2 id="currentMonthYear" class="text-xl md:text-2xl font-bold text-teal-900">
-              December 2025
-            </h2>
-
-            <div class="flex gap-2">
-              <button onclick="changePeriod(-1)" class="p-2 hover:bg-gray-100 rounded-lg">
-                <i class="fas fa-chevron-left"></i>
-              </button>
-
-              <button onclick="changePeriod(1)" class="p-2 hover:bg-gray-100 rounded-lg">
-                <i class="fas fa-chevron-right"></i>
-              </button>
+    <div id="app" class="max-w-7xl mx-auto p-4 md:p-8">
+        <!-- Header -->
+        <header
+            class="flex flex-col md:flex-row justify-between items-center mb-12 glass rounded-2xl p-6 shadow-xl relative z-50">
+            <div class="flex items-center">
+                <div class="w-16 h-16 mr-4">
+                    <img src="images/logo.png" alt="Sky Yoga Logo" class="w-full h-full object-contain">
+                </div>
+                <div>
+                    <h1 class="text-2xl font-black text-teal-900 tracking-tight leading-none">Perambalur</h1>
+                    <p class="text-teal-600 font-bold text-sm tracking-widest uppercase">Arivuthirukovil</p>
+                </div>
             </div>
-          </div>
+            <div class="flex flex-wrap gap-4 mt-4 md:mt-0">
+                <button onclick="toggleLanguage()" id="langToggle"
+                    class="bg-teal-100 text-teal-800 px-4 py-2 rounded-full font-bold shadow-sm hover:bg-teal-200 transition">
+                    <i class="fas fa-language mr-2"></i><span id="langText">தமிழ்</span>
+                </button>
+                <div class="flex bg-white/50 p-1 rounded-full shadow-inner">
+                    <button onclick="setView('month')" id="monthViewBtn"
+                        class="view-btn active px-4 py-1.5 rounded-full text-sm font-bold transition">Month</button>
+                    <button onclick="setView('week')" id="weekViewBtn"
+                        class="view-btn px-4 py-1.5 rounded-full text-sm font-bold transition">Week</button>
+                    <button onclick="setView('day')" id="dayViewBtn"
+                        class="view-btn px-4 py-1.5 rounded-full text-sm font-bold transition">Day</button>
+                    <button onclick="setView('chart')" id="chartViewBtn"
+                        class="view-btn px-4 py-1.5 rounded-full text-sm font-bold transition">Chart</button>
+                </div>
+                <button onclick="toggleAdmin()" id="adminBtn"
+                    class="bg-white text-teal-600 px-6 py-2 rounded-full font-bold shadow-md hover:shadow-lg transition">
+                    <i class="fas fa-user-shield mr-2"></i>Admin
+                </button>
+                <div class="dropdown relative z-50">
+                    <button id="exportBtn"
+                        class="bg-teal-600 text-white px-6 py-2 rounded-full font-bold shadow-md hover:bg-teal-700 transition">
+                        <i class="fas fa-download mr-2"></i>Export
+                    </button>
+                    <div
+                        class="dropdown-content absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-2xl hidden z-[100] overflow-hidden">
+                        <button onclick="exportPDF()" id="pdfExportBtn"
+                            class="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 font-bold"><i
+                                class="fas fa-file-pdf mr-2 text-red-500"></i>PDF Document</button>
+                        <button onclick="exportWord()" id="wordExportBtn"
+                            class="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 font-bold"><i
+                                class="fas fa-file-word mr-2 text-blue-500"></i>Word File</button>
+                        <button onclick="exportJPG()" id="jpgExportBtn"
+                            class="w-full text-left px-4 py-3 hover:bg-gray-50 font-bold"><i
+                                class="fas fa-file-image mr-2 text-green-500"></i>JPG Image</button>
+                    </div>
+                </div>
+            </div>
+        </header>
 
-          <div id="calendarHeader" class="grid grid-cols-7 gap-2 md:gap-4 mb-4"></div>
+        <!-- Main Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <!-- Sidebar / Stats -->
+            <aside class="lg:col-span-1 space-y-6">
+                <div class="glass p-6 rounded-2xl shadow-lg">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-teal-900">Select Calendars</h3>
+                        <button onclick="toggleSettings('calendars')" id="calSettingsBtn"
+                            class="text-teal-600 hover:text-teal-800 hidden"><i class="fas fa-cog"></i></button>
+                    </div>
+                    <div id="calendarFilters" class="space-y-2">
+                        <!-- Dynamic Filters -->
+                    </div>
+                </div>
 
-          <div id="calendarGrid"
-            class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2 md:gap-4 min-h-[400px]">
-          </div>
+                <div id="adminControls" class="glass p-6 rounded-2xl shadow-lg hidden">
+                    <h3 class="font-bold text-teal-900 mb-4" id="adminTitle">Add Event</h3>
+                    <form id="eventForm" class="space-y-4">
+                        <input type="text" id="title" placeholder="Event Name"
+                            class="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal-500 outline-none">
+                        <input type="date" id="date" class="w-full p-3 rounded-xl border border-gray-200">
 
+                        <div>
+                            <label class="text-xs font-bold text-gray-600 mb-1 block">
+                                <i class="far fa-clock mr-1"></i>Start Time
+                            </label>
+                            <div class="flex gap-2">
+                                <input type="number" id="startHour" min="1" max="12" placeholder="09"
+                                    class="w-1/3 p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal-500 outline-none text-center"
+                                    value="9">
+                                <input type="number" id="startMinute" min="0" max="59" placeholder="00"
+                                    class="w-1/3 p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal-500 outline-none text-center"
+                                    value="0">
+                                <select id="startAMPM"
+                                    class="w-1/3 p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal-500 outline-none font-bold">
+                                    <option value="AM">AM</option>
+                                    <option value="PM">PM</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-bold text-gray-600 mb-1 block">
+                                <i class="far fa-clock mr-1"></i>End Time
+                            </label>
+                            <div class="flex gap-2">
+                                <input type="number" id="endHour" min="1" max="12" placeholder="10"
+                                    class="w-1/3 p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal-500 outline-none text-center"
+                                    value="10">
+                                <input type="number" id="endMinute" min="0" max="59" placeholder="00"
+                                    class="w-1/3 p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal-500 outline-none text-center"
+                                    value="0">
+                                <select id="endAMPM"
+                                    class="w-1/3 p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal-500 outline-none font-bold">
+                                    <option value="AM">AM</option>
+                                    <option value="PM">PM</option>
+                                </select>
+                            </div>
+                        </div>
+                        <select id="category" class="w-full p-3 rounded-xl border border-gray-200">
+                            <!-- Options injected by JS -->
+                        </select>
+                        <textarea id="description" placeholder="Description"
+                            class="w-full p-3 rounded-xl border border-gray-200"></textarea>
+                        <input type="number" id="guests" placeholder="Expected Guests"
+                            class="w-full p-3 rounded-xl border border-gray-200">
+
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center">
+                                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider" id="publishToLabel">
+                                    Publish to:</p>
+                                <button type="button" onclick="toggleSettings('calendars')"
+                                    class="text-[10px] text-teal-600 font-bold hover:underline">Manage</button>
+                            </div>
+                            <div id="publishTargets" class="flex flex-wrap gap-2">
+                                <!-- Dynamic Targets -->
+                            </div>
+                        </div>
+
+                        <button type="submit" id="saveEventBtnUI"
+                            class="w-full bg-teal-600 text-white font-bold py-3 rounded-xl hover:bg-teal-700 transition shadow-lg shadow-teal-100">
+                            Save Event
+                        </button>
+                    </form>
+
+                    <div class="border-t border-gray-100 pt-4 mt-6">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase mb-3 tracking-wider"
+                            id="manageOptionsLabel">Manage System:</p>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" onclick="toggleSettings('categories')"
+                                class="text-xs bg-gray-50 p-2 rounded-lg font-bold text-gray-600 hover:bg-teal-50 hover:text-teal-700 transition">
+                                <i class="fas fa-tags mr-1"></i><span id="manageCatsBtn">Categories</span>
+                            </button>
+                            <button type="button" onclick="toggleSettings('calendars')"
+                                class="text-xs bg-gray-50 p-2 rounded-lg font-bold text-gray-600 hover:bg-teal-50 hover:text-teal-700 transition">
+                                <i class="fas fa-layer-group mr-1"></i><span id="manageCalsBtn">Calendars</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="importControls" class="glass p-6 rounded-2xl shadow-lg hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-teal-900" id="importTitle">Import Events</h3>
+                        <button onclick="downloadExcelTemplate()"
+                            class="text-teal-600 hover:text-teal-800 transition flex items-center gap-1 text-sm font-bold"
+                            title="Download Excel Template">
+                            <i class="fas fa-file-excel text-lg"></i>
+                            <span class="text-xs">Template</span>
+                        </button>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="border-2 border-dashed border-teal-200 rounded-xl p-4 text-center hover:bg-teal-50 transition cursor-pointer group"
+                            onclick="document.getElementById('fileImport').click()">
+                            <i
+                                class="fas fa-file-upload text-2xl text-teal-400 group-hover:text-teal-600 mb-2 transition"></i>
+                            <p class="text-xs font-bold text-teal-700" id="uploadLabel">Upload JSON/CSV/Excel</p>
+                            <input type="file" id="fileImport" class="hidden" accept=".json,.csv,.xlsx"
+                                onchange="handleFileImport(this)">
+                        </div>
+                        <div class="space-y-2">
+                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider" id="bulkTextLabel">
+                                Paste Text Data</p>
+                            <textarea id="bulkText" rows="3" placeholder="Title, YYYY-MM-DD, Category..."
+                                class="w-full text-xs p-3 rounded-xl border border-gray-100 bg-gray-50/50 outline-none focus:ring-2 focus:ring-teal-500"></textarea>
+                            <button onclick="handleTextImport()"
+                                class="w-full bg-white border border-teal-200 text-teal-700 text-xs font-bold py-2 rounded-xl hover:bg-teal-50 transition"
+                                id="importBtnUI">Process Import</button>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Calendar -->
+            <main class="lg:col-span-3">
+                <div class="glass p-8 rounded-3xl shadow-2xl">
+                    <div class="flex justify-between items-center mb-8">
+                        <h2 id="currentMonthYear" class="text-2xl font-bold text-teal-900">December 2025</h2>
+                        <div class="flex gap-2">
+                            <button onclick="changePeriod(-1)" class="p-2 hover:bg-gray-100 rounded-lg"><i
+                                    class="fas fa-chevron-left"></i></button>
+                            <button onclick="changePeriod(1)" class="p-2 hover:bg-gray-100 rounded-lg"><i
+                                    class="fas fa-chevron-right"></i></button>
+                        </div>
+                    </div>
+
+                    <div id="calendarHeader" class="grid grid-cols-7 gap-4 mb-4">
+                        <div class="text-center font-bold text-gray-400 text-sm">SUN</div>
+                        <div class="text-center font-bold text-gray-400 text-sm">MON</div>
+                        <div class="text-center font-bold text-gray-400 text-sm">TUE</div>
+                        <div class="text-center font-bold text-gray-400 text-sm">WED</div>
+                        <div class="text-center font-bold text-gray-400 text-sm">THU</div>
+                        <div class="text-center font-bold text-gray-400 text-sm">FRI</div>
+                        <div class="text-center font-bold text-gray-400 text-sm">SAT</div>
+                    </div>
+
+                    <div id="calendarGrid" class="grid grid-cols-7 gap-4 min-h-[400px]">
+                        <!-- Days will be injected here -->
+                    </div>
+                </div>
+            </main>
         </div>
-      </main>
     </div>
-  </div>
 
-  <!-- SCRIPT STARTS HERE -->
-  <!-- SETTINGS MODAL -->
-  <div id="settingsModal" class="fixed inset-0 bg-black/50 hidden z-[110] flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
-      <h3 id="settingsTitle" class="text-xl font-black text-teal-900 mb-6 uppercase tracking-wider">
-        Manage
-      </h3>
-
-      <div id="settingsList" class="space-y-3 mb-8 max-h-60 overflow-y-auto pr-2">
-      </div>
-
-      <div class="bg-gray-50 p-4 rounded-2xl mb-8">
-        <p class="text-xs font-bold text-gray-400 mb-2 uppercase">Add New Option</p>
-
-        <div class="flex gap-2">
-          <input
-            type="text"
-            id="newOptionInput"
-            placeholder="Enter name..."
-            class="flex-1 p-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-teal-500">
-
-          <button onclick="addOption()"
-            class="bg-teal-600 text-white p-3 rounded-xl hover:bg-teal-700 transition">
-            <i class="fas fa-plus"></i>
-          </button>
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 bg-black/50 hidden z-[110] flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
+            <h3 id="settingsTitle" class="text-xl font-black text-teal-900 mb-6 uppercase tracking-wider">Manage</h3>
+            <div id="settingsList" class="space-y-3 mb-8 max-h-60 overflow-y-auto pr-2">
+                <!-- Items injected here -->
+            </div>
+            <div class="bg-gray-50 p-4 rounded-2xl mb-8">
+                <p class="text-xs font-bold text-gray-400 mb-2 uppercase">Add New Option</p>
+                <div class="flex gap-2">
+                    <input type="text" id="newOptionInput" placeholder="Enter name..."
+                        class="flex-1 p-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-teal-500">
+                    <button onclick="addOption()"
+                        class="bg-teal-600 text-white p-3 rounded-xl hover:bg-teal-700 transition"><i
+                            class="fas fa-plus"></i></button>
+                </div>
+            </div>
+            <button onclick="closeSettings()"
+                class="w-full py-4 rounded-2xl bg-gray-100 font-bold hover:bg-gray-200 transition">Close</button>
         </div>
-      </div>
-
-      <button onclick="closeSettings()"
-        class="w-full py-4 rounded-2xl bg-gray-100 font-bold hover:bg-gray-200 transition">
-        Close
-      </button>
     </div>
-  </div>
 
-  <!-- EVENT DETAIL MODAL -->
-  <div id="eventModal" class="fixed inset-0 bg-black/50 hidden z-[100] flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl glass">
-
-      <div id="modalContent"></div>
-
-      <div class="mt-8 flex justify-end gap-3">
-        <button onclick="closeModal()"
-          class="px-6 py-2 rounded-full bg-gray-100 font-bold hover:bg-gray-200 transition">
-          Close
-        </button>
-
-        <button id="deleteEventBtn"
-          onclick="deleteEvent()"
-          class="px-6 py-2 rounded-full bg-red-100 text-red-600 font-bold hover:bg-red-200 transition hidden">
-          <i class="fas fa-trash mr-2"></i>Delete
-        </button>
-
-        <button onclick="shareWhatsApp()"
-          class="px-6 py-2 rounded-full bg-green-500 text-white font-bold hover:bg-green-600 transition">
-          <i class="fab fa-whatsapp mr-2"></i>Share
-        </button>
-      </div>
+    <!-- Event Detail Modal -->
+    <div id="eventModal" class="fixed inset-0 bg-black/50 hidden z-[100] flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl glass">
+            <div id="modalContent"></div>
+            <div class="mt-8 flex justify-end gap-3">
+                <button onclick="closeModal()"
+                    class="px-6 py-2 rounded-full bg-gray-100 font-bold hover:bg-gray-200 transition">Close</button>
+                <button id="deleteEventBtn" onclick="deleteEvent()"
+                    class="px-6 py-2 rounded-full bg-red-100 text-red-600 font-bold hover:bg-red-200 transition hidden">
+                    <i class="fas fa-trash mr-2"></i>Delete
+                </button>
+                <button onclick="shareWhatsApp()"
+                    class="px-6 py-2 rounded-full bg-green-500 text-white font-bold hover:bg-green-600 transition">
+                    <i class="fab fa-whatsapp mr-2"></i>Share
+                </button>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <!-- BEGIN FULL JAVASCRIPT -->
- 
-<script>
+    <script>
         let currentDate = new Date();
         let events = JSON.parse(localStorage.getItem('arivuthirukovil_events')) || [];
 
