@@ -235,197 +235,1021 @@
   </div>
 
   <!-- BEGIN FULL JAVASCRIPT -->
-  <script>
-/* =========  CORE DATA  ========= */
+ 
+<script>
+        let currentDate = new Date();
+        let events = JSON.parse(localStorage.getItem('arivuthirukovil_events')) || [];
 
-let currentDate = new Date();
-let events = JSON.parse(localStorage.getItem('arivuthirukovil_events')) || [];
+        // Dynamic Meta Data
+        let categories = JSON.parse(localStorage.getItem('arivuthirukovil_categories')) || ['Yoga Class', 'Meditation', 'Satsang', 'Workshop', 'Special Program'];
+        let calendarTypes = JSON.parse(localStorage.getItem('arivuthirukovil_calendars')) || ['Public', 'Member', 'Special'];
 
-let categories =
-  JSON.parse(localStorage.getItem('arivuthirukovil_categories')) ||
-  ['Yoga Class', 'Meditation', 'Satsang', 'Workshop', 'Special Program'];
+        let isAdmin = false;
+        let currentView = 'month';
+        let selectedCalendars = [...calendarTypes];
+        let currentSettingsType = null;
+        let currentLanguage = localStorage.getItem('arivuthirukovil_lang') || 'en';
 
-let calendarTypes =
-  JSON.parse(localStorage.getItem('arivuthirukovil_calendars')) ||
-  ['Public', 'Member', 'Special'];
+        // Date formatting helper - converts YYYY-MM-DD to DD-MM-YYYY
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            const [year, month, day] = dateStr.split('-');
+            return `${day}-${month}-${year}`;
+        }
 
-let isAdmin = false;
-let currentView = 'month';
-let selectedCalendars = [...calendarTypes];
-let currentSettingsType = null;
-let currentLanguage = localStorage.getItem('arivuthirukovil_lang') || 'en';
+        // Convert DD-MM-YYYY to YYYY-MM-DD for storage
+        function parseDate(dateStr) {
+            if (!dateStr) return '';
+            const [day, month, year] = dateStr.split('-');
+            return `${year}-${month}-${day}`;
+        }
 
-let timelineFilter = 'day';
-let timelineFromDate = null;
-let timelineToDate = null;
+        // Convert 24-hour time to 12-hour AM/PM format
+        function formatTime12Hour(time24) {
+            if (!time24) return '';
+            const [hour, minute] = time24.split(':').map(Number);
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const hour12 = hour % 12 || 12;
+            return `${hour12}:${String(minute).padStart(2, '0')} ${ampm}`;
+        }
 
-/* =========  HELPERS  ========= */
+        const translations = {
+            en: {
+                title: "Perambalur", subtitle: "Arivuthirukovil", month: "Month", week: "Week", day: "Day", chart: "Chart", admin: "Admin", export: "Export",
+                pdf: "PDF Document", word: "Word File", jpg: "JPG Image", selectCalendars: "Select Calendars", addEvent: "Add Event",
+                eventTitle: "Event Name", date: "Date", category: "Category", description: "Description", guests: "Guests Count",
+                publishTo: "Publish to:", saveEvent: "Save Event", manage: "Manage", manageOptions: "Manage System:", categories: "Categories",
+                calendars: "Calendars", close: "Close", share: "Share", delete: "Delete", confirmDelete: "Are you sure?",
+                noEvents: "No events scheduled", weekOf: "Week of", timeline: "Timeline", addNew: "Add New", enterName: "Enter name...",
+                exitAdmin: "Exit Admin", adminMode: "Admin Mode", lang: "தமிழ்", guestsLabel: "Guests", noDesc: "No description provided.",
+                manageTitle: "Manage", confirmRemove: "Are you sure you want to delete", importEvents: "Import Events", upload: "Upload JSON/CSV",
+                pasteLabel: "Paste Text Data", processText: "Process Import"
+            },
+            ta: {
+                title: "பெரம்பலூர்", subtitle: "அறிவுத்திருக்கோவில்", month: "மாதம்", week: "வாரம்", day: "நாள்", chart: "வரைபடம்", admin: "நிர்வாகம்", export: "பதிவிறக்கம்",
+                pdf: "PDF ஆவணம்", word: "Word கோப்பு", jpg: "JPG படம்", selectCalendars: "நாட்காட்டிகள்", addEvent: "நிகழ்வைச் சேர்",
+                eventTitle: "நிகழ்வின் தலைப்பு", date: "தேதி", category: "வகை", description: "விளக்கம்", guests: "விருந்தினர்கள்",
+                publishTo: "வெளியிடவும்:", saveEvent: "சேமிக்கவும்", manage: "நிர்வகி", manageOptions: "முறைமை நிர்வாகம்:", categories: "வகைகள்",
+                calendars: "நாட்காட்டிகள்", close: "மூடு", share: "பகிர்", delete: "நீக்கு", confirmDelete: "நிச்சயமாக நீக்கவா?",
+                noEvents: "நிகழ்வுகள் இல்லை", weekOf: "வாரம்", timeline: "காலவரிசை", addNew: "புதியதைச் சேர்", enterName: "பெயர்...",
+                exitAdmin: "வெளியேறு", adminMode: "நிர்வாகம்", lang: "English", guestsLabel: "விருந்தினர்கள்", noDesc: "விளக்கம் இல்லை.",
+                manageTitle: "நிர்வகி", confirmRemove: "நிச்சயமாக நீக்கவா", importEvents: "பதிவேற்றம்", upload: "JSON/CSV பதிவேற்றம்",
+                pasteLabel: "தகவல்களை ஒட்டவும்", processText: "செயலாக்கு"
+            }
+        };
 
-function formatDate(dateStr) {
-  if (!dateStr) return '';
-  const [y, m, d] = dateStr.split('-');
-  return `${d}-${m}-${y}`;
-}
+        function t(key) { return translations[currentLanguage][key] || key; }
 
-function formatTime12Hour(t) {
-  if (!t) return '';
-  const [h, m] = t.split(':').map(Number);
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  const hr = h % 12 || 12;
-  return `${hr}:${String(m).padStart(2, '0')} ${ampm}`;
-}
+        function toggleLanguage() {
+            currentLanguage = currentLanguage === 'en' ? 'ta' : 'en';
+            localStorage.setItem('arivuthirukovil_lang', currentLanguage);
+            updateUILanguage();
+            renderOptions();
+            renderCalendar();
+        }
 
-/* ========= TRANSLATIONS ========= */
+        function updateUILanguage() {
+            const safeSetText = (id, key) => {
+                const el = document.getElementById(id);
+                if (el) el.innerText = t(key);
+            };
+            const safeSetHTML = (id, html) => {
+                const el = document.getElementById(id);
+                if (el) el.innerHTML = html;
+            };
 
-const translations = {
-  en: { month: 'Month', week: 'Week', day: 'Day', chart: 'Chart', noEvents: 'No events scheduled' },
-  ta: { month: 'மாதம்', week: 'வாரம்', day: 'நாள்', chart: 'வரைபடம்', noEvents: 'நிகழ்வுகள் இல்லை' }
-};
+            const h1 = document.querySelector('h1');
+            if (h1) h1.innerText = t('title');
 
-function t(k) {
-  return (translations[currentLanguage] && translations[currentLanguage][k]) || k;
-}
+            const subtitle = document.querySelector('p.text-teal-600');
+            if (subtitle) subtitle.innerText = t('subtitle');
 
-function toggleLanguage() {
-  currentLanguage = currentLanguage === 'en' ? 'ta' : 'en';
-  localStorage.setItem('arivuthirukovil_lang', currentLanguage);
-  renderCalendar();
-}
+            safeSetText('langText', 'lang');
+            safeSetText('monthViewBtn', 'month');
+            safeSetText('weekViewBtn', 'week');
+            safeSetText('dayViewBtn', 'day');
+            safeSetText('chartViewBtn', 'chart');
 
-/* =========  VIEW HANDLING  ========= */
+            const adminBtn = document.getElementById('adminBtn');
+            if (adminBtn) adminBtn.innerHTML = isAdmin ? `<i class="fas fa-times mr-2"></i>${t('exitAdmin')}` : `<i class="fas fa-user-shield mr-2"></i>${t('admin')}`;
 
-function setView(view) {
-  currentView = view;
-  document.querySelectorAll('.view-btn').forEach(b =>
-    b.classList.remove('bg-teal-600', 'text-white')
-  );
-  document.getElementById(view + 'ViewBtn').classList.add('bg-teal-600', 'text-white');
-  renderCalendar();
-}
+            const exportBtn = document.getElementById('exportBtn');
+            if (exportBtn) exportBtn.innerHTML = `<i class="fas fa-download mr-2"></i>${t('export')}`;
 
-function changePeriod(delta) {
-  if (currentView === 'month') currentDate.setMonth(currentDate.getMonth() + delta);
-  if (currentView === 'week') currentDate.setDate(currentDate.getDate() + delta * 7);
-  if (currentView === 'day') currentDate.setDate(currentDate.getDate() + delta);
-  if (currentView === 'chart') currentDate.setMonth(currentDate.getMonth() + delta);
-  renderCalendar();
-}
+            safeSetHTML('pdfExportBtn', `<i class="fas fa-file-pdf mr-2 text-red-500"></i>${t('pdf')}`);
+            safeSetHTML('wordExportBtn', `<i class="fas fa-file-word mr-2 text-blue-500"></i>${t('word')}`);
+            safeSetHTML('jpgExportBtn', `<i class="fas fa-file-image mr-2 text-green-500"></i>${t('jpg')}`);
 
-/* =========  FILTERS  ========= */
+            const asideH3 = document.querySelector('aside h3');
+            if (asideH3) asideH3.innerText = t('selectCalendars');
 
-function toggleCalendar(cb) {
-  const v = cb.value;
-  if (cb.checked) {
-    if (!selectedCalendars.includes(v)) selectedCalendars.push(v);
-  } else {
-    selectedCalendars = selectedCalendars.filter(x => x !== v);
-  }
-  renderCalendar();
-}
+            safeSetText('adminTitle', 'addEvent');
+            safeSetText('publishToLabel', 'publishTo');
 
-/* =========  RENDER OPTIONS ========= */
+            const titleInput = document.getElementById('title');
+            if (titleInput) titleInput.placeholder = t('eventTitle');
 
-function renderOptions() {
-  const filters = document.getElementById('calendarFilters');
-  filters.innerHTML = calendarTypes
-    .map(
-      c => `
-      <label class="flex items-center p-3 bg-white/50 rounded-xl cursor-pointer hover:bg-white transition">
-        <input type="checkbox" value="${c}" ${
-        selectedCalendars.includes(c) ? 'checked' : ''
-      } onchange="toggleCalendar(this)" class="mr-3 w-5 h-5 accent-teal-600">
-        <span class="text-sm font-bold">${c} Calendar</span>
-      </label>`
-    )
-    .join('');
-}
+            const descInput = document.getElementById('description');
+            if (descInput) descInput.placeholder = t('description');
 
-/* =========  CALENDAR RENDER ========= */
+            const guestsInput = document.getElementById('guests');
+            if (guestsInput) guestsInput.placeholder = t('guests');
 
-function renderCalendar() {
-  const grid = document.getElementById('calendarGrid');
-  const header = document.getElementById('calendarHeader');
-  grid.innerHTML = '';
-  header.innerHTML = '';
+            const manageBtn = document.querySelector('#adminControls button[onclick*="toggleSettings(\'calendars\')"]');
+            if (manageBtn) manageBtn.innerText = t('manage');
 
-  const filtered = events.filter(e =>
-    (e.calendars || ['Public']).some(c => selectedCalendars.includes(c))
-  );
+            safeSetText('manageOptionsLabel', 'manageOptions');
+            safeSetText('manageCatsBtn', 'categories');
+            safeSetText('manageCalsBtn', 'calendars');
+            safeSetText('saveEventBtnUI', 'saveEvent');
 
-  if (currentView === 'month') renderMonth(filtered, grid, header);
-  if (currentView === 'week') renderWeek(filtered, grid, header);
-  if (currentView === 'day') renderDay(filtered, grid);
-  if (currentView === 'chart') renderChart(filtered, grid);
-}
+            safeSetText('importTitle', 'importEvents');
+            safeSetText('uploadLabel', 'upload');
+            safeSetText('bulkTextLabel', 'pasteLabel');
+            safeSetText('importBtnUI', 'processText');
 
-function renderMonth(list, grid, header) {
-  grid.className =
-    'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2 md:gap-4';
-  header.className = 'grid grid-cols-7 gap-2 md:gap-4 mb-4';
+            const modalCloseBtn = document.querySelector('#eventModal button[onclick="closeModal()"]');
+            if (modalCloseBtn) modalCloseBtn.innerText = t('close');
 
-  ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].forEach(d => {
-    header.innerHTML += `<div class="text-center font-bold text-gray-400 text-sm">${d}</div>`;
-  });
+            const modalShareBtn = document.querySelector('#eventModal button[onclick="shareWhatsApp()"]');
+            if (modalShareBtn) modalShareBtn.innerHTML = `<i class="fab fa-whatsapp mr-2"></i>${t('share')}`;
 
-  const m = currentDate.getMonth();
-  const y = currentDate.getFullYear();
+            const delBtn = document.getElementById('deleteEventBtn');
+            if (delBtn) delBtn.innerHTML = `<i class="fas fa-trash mr-2"></i>${t('delete')}`;
+        }
 
-  const first = new Date(y, m, 1).getDay();
-  const days = new Date(y, m + 1, 0).getDate();
+        function setView(view) {
+            currentView = view;
+            document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active', 'bg-teal-600', 'text-white'));
+            const btnId = `${view}ViewBtn`;
+            const activeBtn = document.getElementById(btnId);
+            if (activeBtn) activeBtn.classList.add('active', 'bg-teal-600', 'text-white');
+            renderCalendar();
+        }
 
-  for (let i = 0; i < first; i++) grid.innerHTML += `<div></div>`;
+        function toggleCalendar(checkbox) {
+            const val = checkbox.value;
+            if (checkbox.checked) {
+                if (!selectedCalendars.includes(val)) selectedCalendars.push(val);
+            } else {
+                selectedCalendars = selectedCalendars.filter(c => c !== val);
+            }
+            renderCalendar();
+        }
 
-  for (let d = 1; d <= days; d++) {
-    const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-    const dayEvents = list.filter(e => e.date === dateStr);
+        // --- Meta Management ---
+        function renderOptions() {
+            // Render Category Dropdown
+            const catSelect = document.getElementById('category');
+            catSelect.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
 
-    grid.innerHTML += `
-      <div class="h-20 sm:h-24 md:h-28 lg:h-32 p-2 bg-white rounded-2xl border">
-        <span class="text-xs font-bold text-gray-400">${d}</span>
-        <div class="mt-1 overflow-y-auto">
-        ${dayEvents
-          .map(
-            e => `<div onclick="showEvent('${e.id}')" class="text-[10px] p-1 mb-1 bg-teal-50 border-l-2 border-teal-500 truncate cursor-pointer">
-              ${e.title}
-            </div>`
-          )
-          .join('')}
-        </div>
-      </div>`;
-  }
-}
+            // Render Sidebar Filters
+            const filters = document.getElementById('calendarFilters');
+            filters.innerHTML = calendarTypes.map(c => `
+                <label class="flex items-center p-3 bg-white/50 rounded-xl cursor-pointer hover:bg-white transition border border-transparent hover:border-teal-100">
+                    <input type="checkbox" ${selectedCalendars.includes(c) ? 'checked' : ''} value="${c}" onchange="toggleCalendar(this)" class="mr-3 w-5 h-5 accent-teal-600">
+                    <span class="text-sm font-bold text-gray-700">${c} Calendar</span>
+                </label>
+            `).join('');
 
-/* =========  MODALS  ========= */
+            // Render Admin Publish Targets
+            const targets = document.getElementById('publishTargets');
+            targets.innerHTML = calendarTypes.map(c => `
+                <label class="text-xs bg-gray-100 px-3 py-1.5 rounded-full cursor-pointer hover:bg-teal-50 border border-transparent transition">
+                    <input type="checkbox" name="targetCalendars" value="${c}" class="mr-1"> ${c}
+                </label>
+            `).join('');
 
-function showEvent(id) {
-  const e = events.find(ev => ev.id === id);
-  const c = document.getElementById('modalContent');
-  c.innerHTML = `
-    <h2 class="text-xl font-bold">${e.title}</h2>
-    <p>${formatDate(e.date)}</p>
-  `;
-  document.getElementById('eventModal').classList.remove('hidden');
-}
+            // Auto-check the first one in admin
+            const first = targets.querySelector('input');
+            if (first) first.checked = true;
+        }
 
-function closeModal() {
-  document.getElementById('eventModal').classList.add('hidden');
-}
+        function toggleSettings(type) {
+            currentSettingsType = type;
+            const title = document.getElementById('settingsTitle');
+            const typeLabel = type === 'categories' ? t('categories') : t('calendars');
+            title.innerText = `${t('manageTitle')} ${typeLabel}`;
 
-/* =========  ADMIN ========= */
+            const list = document.getElementById('settingsList');
+            const data = type === 'categories' ? categories : calendarTypes;
 
-function toggleAdmin() {
-  if (!isAdmin) {
-    const p = prompt('Enter admin password:');
-    if (p !== 'skypblr123') return alert('Incorrect password!');
-  }
-  isAdmin = !isAdmin;
-}
+            list.innerHTML = data.map(item => `
+                <div class="flex justify-between items-center p-4 bg-teal-50/50 rounded-2xl border border-teal-100 group">
+                    <span class="font-bold text-teal-900">${item}</span>
+                    <button onclick="removeOption('${item}')" class="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition"><i class="fas fa-trash-alt"></i></button>
+                </div>
+            `).join('');
 
-/* ========= INIT ========= */
+            document.getElementById('settingsModal').classList.remove('hidden');
+        }
 
-renderOptions();
-renderCalendar();
+        function addOption() {
+            const input = document.getElementById('newOptionInput');
+            const val = input.value.trim();
+            if (!val) return;
 
-  </script>
+            if (currentSettingsType === 'categories') {
+                if (!categories.includes(val)) categories.push(val);
+                localStorage.setItem('arivuthirukovil_categories', JSON.stringify(categories));
+            } else {
+                if (!calendarTypes.includes(val)) {
+                    calendarTypes.push(val);
+                    selectedCalendars.push(val); // By default show new calendar
+                }
+                localStorage.setItem('arivuthirukovil_calendars', JSON.stringify(calendarTypes));
+            }
+
+            input.value = '';
+            toggleSettings(currentSettingsType);
+            renderOptions();
+            renderCalendar();
+        }
+
+        function removeOption(item) {
+            if (!confirm(`${t('confirmRemove')} "${item}"?`)) return;
+
+            if (currentSettingsType === 'categories') {
+                categories = categories.filter(c => c !== item);
+                localStorage.setItem('arivuthirukovil_categories', JSON.stringify(categories));
+            } else {
+                calendarTypes = calendarTypes.filter(c => c !== item);
+                selectedCalendars = selectedCalendars.filter(c => c !== item);
+                localStorage.setItem('arivuthirukovil_calendars', JSON.stringify(calendarTypes));
+            }
+
+            toggleSettings(currentSettingsType);
+            renderOptions();
+            renderCalendar();
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.add('hidden');
+        }
+
+        async function fetchEvents() {
+            // No-op for serverless fetching, events are loaded from localStorage at start
+            renderCalendar();
+        }
+
+        function renderCalendar() {
+            const grid = document.getElementById('calendarGrid');
+            const header = document.getElementById('calendarHeader');
+            grid.innerHTML = '';
+
+            const filteredEvents = events.filter(e => {
+                const targetCals = e.calendars || ['Public'];
+                return targetCals.some(c => selectedCalendars.includes(c));
+            });
+
+            if (currentView === 'month') renderMonthView(grid, header, filteredEvents);
+            else if (currentView === 'week') renderWeekView(grid, header, filteredEvents);
+            else if (currentView === 'day') renderDayView(grid, header, filteredEvents);
+            else if (currentView === 'chart') renderChartView(grid, header, filteredEvents);
+        }
+
+        function renderMonthView(grid, header, eventsList) {
+            grid.className = 'grid grid-cols-7 gap-4';
+            header.className = 'grid grid-cols-7 gap-4 mb-4';
+            header.innerHTML = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map(d => `<div class="text-center font-bold text-gray-400 text-sm">${d}</div>`).join('');
+
+            const month = currentDate.getMonth();
+            const year = currentDate.getFullYear();
+            const monthName = new Intl.DateTimeFormat(currentLanguage === 'ta' ? 'ta-IN' : 'en-US', { month: 'long', year: 'numeric' }).format(currentDate);
+            document.getElementById('currentMonthYear').innerText = monthName;
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            for (let i = 0; i < firstDay; i++) grid.innerHTML += '<div class="h-24 md:h-32 bg-gray-50/30 rounded-2xl"></div>';
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const dayEvents = eventsList.filter(e => e.date === dateStr);
+                const eventsHtml = dayEvents.map(e => `
+                    <div onclick="showEvent('${e.id}')" class="text-[10px] p-1 mb-1 rounded bg-teal-50 text-teal-700 border-l-2 border-teal-500 truncate cursor-pointer hover:bg-teal-100">
+                        ${e.title}
+                    </div>
+                `).join('');
+
+                grid.innerHTML += `
+                    <div class="h-24 md:h-32 p-2 bg-white rounded-2xl shadow-sm border border-gray-100 day flex flex-col">
+                        <span class="font-bold text-gray-400 text-xs">${day}</span>
+                        <div class="flex-1 overflow-y-auto mt-1">${eventsHtml}</div>
+                    </div>
+                `;
+            }
+        }
+
+        function renderWeekView(grid, header, eventsList) {
+            grid.className = 'grid grid-cols-7 gap-4';
+            header.className = 'grid grid-cols-7 gap-4 mb-4';
+
+            const startOfWeek = new Date(currentDate);
+            startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
+
+            const dateStr = startOfWeek.toISOString().split('T')[0];
+            document.getElementById('currentMonthYear').innerText = `${t('weekOf')} ${formatDate(dateStr)}`;
+
+            header.innerHTML = '';
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(startOfWeek);
+                d.setDate(startOfWeek.getDate() + i);
+                header.innerHTML += `<div class="text-center"><p class="text-[10px] font-bold text-gray-400">${['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][i]}</p><p class="font-bold text-teal-900">${d.getDate()}</p></div>`;
+
+                const dateStr = d.toISOString().split('T')[0];
+                const dayEvents = eventsList.filter(e => e.date === dateStr);
+                const eventsHtml = dayEvents.map(e => `
+                    <div onclick="showEvent('${e.id}')" class="p-2 mb-2 rounded-xl bg-teal-50 text-teal-800 border-l-4 border-teal-500 text-xs cursor-pointer hover:bg-teal-100 transition shadow-sm">
+                        <p class="font-bold">${e.title}</p>
+                        <p class="text-[10px] opacity-70">${e.category}</p>
+                    </div>
+                `).join('');
+
+                grid.innerHTML += `<div class="min-h-[300px] p-2 bg-white/30 rounded-2xl border border-dashed border-gray-200">${eventsHtml}</div>`;
+            }
+        }
+
+        function renderDayView(grid, header, eventsList) {
+            grid.className = 'block space-y-4';
+            header.innerHTML = '';
+            document.getElementById('currentMonthYear').innerText = currentDate.toLocaleDateString(currentLanguage === 'ta' ? 'ta-IN' : 'en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+            const dateStr = currentDate.toISOString().split('T')[0];
+            const dayEvents = eventsList.filter(e => e.date === dateStr);
+
+            if (dayEvents.length === 0) {
+                grid.innerHTML = `<div class="text-center py-20 text-gray-400 font-bold glass rounded-3xl">${t('noEvents')}</div>`;
+            } else {
+                grid.innerHTML = dayEvents.map(e => `
+                    <div onclick="showEvent('${e.id}')" class="flex items-center gap-6 p-6 bg-white rounded-3xl shadow-lg border-l-8 border-teal-500 cursor-pointer hover:scale-[1.02] transition">
+                        <div class="w-16 h-16 bg-teal-50 rounded-2xl flex flex-col items-center justify-center text-teal-600">
+                             <span class="text-xs font-bold">${e.category.split(' ')[0]}</span>
+                             <i class="fas fa-clock text-xl"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-xl font-black text-gray-800">${e.title}</h3>
+                            <p class="text-gray-500">${e.description || 'No description'}</p>
+                        </div>
+                        <div class="text-right">
+                           <span class="px-4 py-1 bg-teal-100 text-teal-700 rounded-full text-xs font-black shadow-sm">${e.guests || 0} Guests</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function renderChartView(grid, header, eventsList) {
+            grid.className = 'block bg-white p-6 rounded-2xl shadow-inner overflow-x-auto';
+            header.innerHTML = '';
+            document.getElementById('currentMonthYear').innerText = t('timeline');
+
+            // Date range filter
+            const dateRangeFilter = `
+                <div class="flex gap-3 mb-4 items-center justify-center flex-wrap">
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs font-bold text-gray-600">From:</label>
+                        <input type="date" id="timelineFromDate" class="p-2 rounded-lg border border-gray-200 text-sm focus:ring-2 focus:ring-teal-500 outline-none">
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs font-bold text-gray-600">To:</label>
+                        <input type="date" id="timelineToDate" class="p-2 rounded-lg border border-gray-200 text-sm focus:ring-2 focus:ring-teal-500 outline-none">
+                    </div>
+                    <button onclick="applyTimelineFilter()" class="px-4 py-2 bg-teal-600 text-white rounded-lg font-bold text-sm hover:bg-teal-700 transition">
+                        <i class="fas fa-filter mr-1"></i>Apply Filter
+                    </button>
+                    <button onclick="clearTimelineFilter()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-bold text-sm hover:bg-gray-300 transition">
+                        <i class="fas fa-times mr-1"></i>Clear
+                    </button>
+                </div>
+            `;
+
+            // Timeline filter buttons
+            const filterButtons = `
+                ${dateRangeFilter}
+                <div class="flex gap-2 mb-6 justify-center">
+                    <button onclick="setTimelineFilter('day')" class="timeline-filter px-4 py-2 rounded-lg font-bold text-sm ${timelineFilter === 'day' ? 'bg-teal-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-teal-50'}">Day</button>
+                    <button onclick="setTimelineFilter('week')" class="timeline-filter px-4 py-2 rounded-lg font-bold text-sm ${timelineFilter === 'week' ? 'bg-teal-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-teal-50'}">Week</button>
+                    <button onclick="setTimelineFilter('month')" class="timeline-filter px-4 py-2 rounded-lg font-bold text-sm ${timelineFilter === 'month' ? 'bg-teal-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-teal-50'}">Month</button>
+                </div>
+            `;
+
+            if (timelineFilter === 'day') {
+                renderTimelineDay(grid, filterEventsByDateRange(eventsList), filterButtons);
+            } else if (timelineFilter === 'week') {
+                renderTimelineWeek(grid, filterEventsByDateRange(eventsList), filterButtons);
+            } else {
+                renderTimelineMonth(grid, filterEventsByDateRange(eventsList), filterButtons);
+            }
+        }
+
+        function renderTimelineDay(grid, eventsList, filterButtons) {
+            const dateStr = currentDate.toISOString().split('T')[0];
+            const dayEvents = eventsList.filter(e => e.date === dateStr).sort((a, b) => {
+                const timeA = a.startTime || '00:00';
+                const timeB = b.startTime || '00:00';
+                return timeA.localeCompare(timeB);
+            });
+
+            let html = filterButtons + '<div class="space-y-2">';
+
+            // Create 24-hour timeline
+            for (let hour = 0; hour < 24; hour++) {
+                const hourStr = String(hour).padStart(2, '0') + ':00';
+                const hourEvents = dayEvents.filter(e => {
+                    const startHour = parseInt((e.startTime || '00:00').split(':')[0]);
+                    return startHour === hour;
+                });
+
+                html += `
+                    <div class="flex gap-3 items-start border-b border-gray-100 pb-2">
+                        <div class="w-16 text-sm font-bold text-gray-400 pt-2">${hourStr}</div>
+                        <div class="flex-1 min-h-[40px] flex flex-wrap gap-2">
+                            ${hourEvents.map(e => {
+                    const duration = calculateDuration(e.startTime, e.endTime);
+                    return `
+                                    <div onclick="showEvent('${e.id}')" class="cursor-pointer px-3 py-2 rounded-lg ${getCategoryClass(e.category)} hover:shadow-md transition flex-1 min-w-[200px]">
+                                        <div class="font-bold text-sm">${e.title}</div>
+                                        <div class="text-xs opacity-75">${e.startTime} - ${e.endTime} (${duration} min)</div>
+                                    </div>
+                                `;
+                }).join('') || '<div class="text-gray-300 text-sm pt-2">-</div>'}
+                        </div>
+                    </div>
+                `;
+            }
+            html += '</div>';
+            grid.innerHTML = html;
+        }
+
+        function renderTimelineWeek(grid, eventsList, filterButtons) {
+            const startOfWeek = new Date(currentDate);
+            startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
+
+            let html = filterButtons + '<div class="grid grid-cols-7 gap-2">';
+
+            for (let i = 0; i < 7; i++) {
+                const day = new Date(startOfWeek);
+                day.setDate(startOfWeek.getDate() + i);
+                const dateStr = day.toISOString().split('T')[0];
+                const dayEvents = eventsList.filter(e => e.date === dateStr).sort((a, b) => {
+                    return (a.startTime || '00:00').localeCompare(b.startTime || '00:00');
+                });
+
+                html += `
+                    <div class="border border-gray-200 rounded-lg p-2 min-h-[300px]">
+                        <div class="font-bold text-center text-sm mb-2 text-teal-900">
+                            ${day.toLocaleDateString('en-US', { weekday: 'short' })}
+                            <div class="text-xs text-gray-500">${day.getDate()}</div>
+                        </div>
+                        <div class="space-y-1">
+                            ${dayEvents.map(e => `
+                                <div onclick="showEvent('${e.id}')" class="cursor-pointer text-xs p-2 rounded ${getCategoryClass(e.category)} hover:shadow-sm transition">
+                                    <div class="font-bold truncate">${e.title}</div>
+                                    <div class="opacity-75">${e.startTime}</div>
+                                </div>
+                            `).join('') || '<div class="text-gray-300 text-xs text-center mt-4">No events</div>'}
+                        </div>
+                    </div>
+                `;
+            }
+            html += '</div>';
+            grid.innerHTML = html;
+        }
+
+        function renderTimelineMonth(grid, eventsList, filterButtons) {
+            const month = currentDate.getMonth();
+            const year = currentDate.getFullYear();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            let html = filterButtons + '<div class="grid grid-cols-7 gap-2">';
+
+            const firstDay = new Date(year, month, 1).getDay();
+            for (let i = 0; i < firstDay; i++) {
+                html += '<div></div>';
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const dayEvents = eventsList.filter(e => e.date === dateStr).sort((a, b) => {
+                    return (a.startTime || '00:00').localeCompare(b.startTime || '00:00');
+                });
+
+                html += `
+                    <div class="border border-gray-200 rounded-lg p-2 min-h-[100px]">
+                        <div class="font-bold text-sm text-gray-600 mb-1">${day}</div>
+                        <div class="space-y-1">
+                            ${dayEvents.slice(0, 3).map(e => `
+                                <div onclick="showEvent('${e.id}')" class="cursor-pointer text-[10px] p-1 rounded ${getCategoryClass(e.category)} truncate hover:shadow-sm transition">
+                                    ${e.startTime} ${e.title}
+                                </div>
+                            `).join('')}
+                            ${dayEvents.length > 3 ? `<div class="text-[10px] text-gray-400 text-center">+${dayEvents.length - 3} more</div>` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+            html += '</div>';
+            grid.innerHTML = html;
+        }
+
+        function calculateDuration(startTime, endTime) {
+            if (!startTime || !endTime) return 0;
+            const [startH, startM] = startTime.split(':').map(Number);
+            const [endH, endM] = endTime.split(':').map(Number);
+            return (endH * 60 + endM) - (startH * 60 + startM);
+        }
+
+        let timelineFilter = 'day';
+        let timelineFromDate = null;
+        let timelineToDate = null;
+
+        function setTimelineFilter(filter) {
+            timelineFilter = filter;
+            renderCalendar();
+        }
+
+        function applyTimelineFilter() {
+            const fromInput = document.getElementById('timelineFromDate');
+            const toInput = document.getElementById('timelineToDate');
+
+            if (fromInput && toInput) {
+                timelineFromDate = fromInput.value;
+                timelineToDate = toInput.value;
+
+                if (timelineFromDate && timelineToDate) {
+                    if (timelineFromDate > timelineToDate) {
+                        alert('From date must be before To date!');
+                        return;
+                    }
+                }
+                renderCalendar();
+            }
+        }
+
+        function clearTimelineFilter() {
+            timelineFromDate = null;
+            timelineToDate = null;
+            const fromInput = document.getElementById('timelineFromDate');
+            const toInput = document.getElementById('timelineToDate');
+            if (fromInput) fromInput.value = '';
+            if (toInput) toInput.value = '';
+            renderCalendar();
+        }
+
+        function filterEventsByDateRange(eventsList) {
+            if (!timelineFromDate && !timelineToDate) {
+                return eventsList;
+            }
+
+            return eventsList.filter(e => {
+                if (timelineFromDate && e.date < timelineFromDate) return false;
+                if (timelineToDate && e.date > timelineToDate) return false;
+                return true;
+            });
+        }
+
+        function changePeriod(delta) {
+            if (currentView === 'month') currentDate.setMonth(currentDate.getMonth() + delta);
+            else if (currentView === 'week') currentDate.setDate(currentDate.getDate() + (delta * 7));
+            else if (currentView === 'day') currentDate.setDate(currentDate.getDate() + delta);
+            else if (currentView === 'chart') currentDate.setMonth(currentDate.getMonth() + delta);
+            renderCalendar();
+        }
+
+        function showEvent(id) {
+            const event = events.find(e => e.id === id);
+            const content = document.getElementById('modalContent');
+            content.innerHTML = `
+                <span class="inline-block px-3 py-1 rounded-full text-xs font-bold mb-4 bg-teal-100 text-teal-700">${event.category}</span>
+                <h2 class="text-2xl font-black text-teal-900 mb-2">${event.title}</h2>
+                <p class="text-gray-500 mb-2"><i class="far fa-calendar-alt mr-2"></i>${formatDate(event.date)}</p>
+                ${event.startTime && event.endTime ? `<p class="text-gray-500 mb-6"><i class="far fa-clock mr-2"></i>${formatTime12Hour(event.startTime)} - ${formatTime12Hour(event.endTime)}</p>` : ''}
+                <div class="bg-gray-50 p-4 rounded-2xl mb-6">
+                    <p class="text-gray-700">${event.description || t('noDesc')}</p>
+                </div>
+                <div class="flex items-center gap-4 text-sm font-bold text-gray-600">
+                    <span><i class="fas fa-users mr-2"></i>${event.guests || 0} ${t('guestsLabel')}</span>
+                </div>
+            `;
+
+            // Show/Hide delete button based on admin status
+            const deleteBtn = document.getElementById('deleteEventBtn');
+            if (isAdmin) {
+                deleteBtn.classList.remove('hidden');
+                deleteBtn.dataset.eventId = id;
+            } else {
+                deleteBtn.classList.add('hidden');
+            }
+
+            document.getElementById('eventModal').classList.remove('hidden');
+        }
+
+        function deleteEvent() {
+            const id = document.getElementById('deleteEventBtn').dataset.eventId;
+            if (!confirm(t('confirmDelete'))) return;
+
+            events = events.filter(e => e.id !== id);
+            localStorage.setItem('arivuthirukovil_events', JSON.stringify(events));
+            closeModal();
+            renderCalendar();
+        }
+
+        function getCategoryClass(cat) {
+            switch (cat) {
+                case 'Yoga Class': return 'bg-teal-100 text-teal-700';
+                case 'Meditation': return 'bg-blue-100 text-blue-700';
+                case 'Satsang': return 'bg-purple-100 text-purple-700';
+                case 'Workshop': return 'bg-orange-100 text-orange-700';
+                default: return 'bg-emerald-100 text-emerald-700';
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('eventModal').classList.add('hidden');
+        }
+
+        async function handleFileImport(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            if (file.name.endsWith('.xlsx')) {
+                // Handle Excel file
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+
+                        const imported = jsonData.map(row => {
+                            if (!row.Title || !row.Date) return null;
+                            return {
+                                id: Date.now().toString() + Math.random(),
+                                title: row.Title,
+                                date: row.Date,
+                                startTime: row['Start Time'] || '09:00',
+                                endTime: row['End Time'] || '10:00',
+                                category: row.Category || 'Yoga Class',
+                                description: row.Description || '',
+                                guests: row.Guests || 0,
+                                calendars: row.Calendars ? row.Calendars.split(',').map(c => c.trim()) : ['Public'],
+                                status: 'Planned'
+                            };
+                        }).filter(e => e);
+
+                        events = [...events, ...imported];
+                        localStorage.setItem('arivuthirukovil_events', JSON.stringify(events));
+                        renderCalendar();
+                        alert(`Successfully imported ${imported.length} events from Excel!`);
+                    } catch (err) {
+                        alert('Error parsing Excel file: ' + err.message);
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            } else {
+                // Handle JSON/CSV
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const content = e.target.result;
+                        let imported = [];
+                        if (file.name.endsWith('.json')) {
+                            imported = JSON.parse(content);
+                        } else if (file.name.endsWith('.csv')) {
+                            const lines = content.split('\n');
+                            imported = lines.slice(1).map(line => {
+                                const values = line.split(',');
+                                if (values.length < 2) return null;
+                                return {
+                                    id: Date.now().toString() + Math.random(),
+                                    title: values[0],
+                                    date: values[1],
+                                    startTime: values[4] || '09:00',
+                                    endTime: values[5] || '10:00',
+                                    category: values[2] || 'Yoga Class',
+                                    description: values[3] || '',
+                                    calendars: ['Public'],
+                                    status: 'Planned'
+                                };
+                            }).filter(e => e);
+                        }
+                        events = [...events, ...imported];
+                        localStorage.setItem('arivuthirukovil_events', JSON.stringify(events));
+                        renderCalendar();
+                        alert(`Successfully imported ${imported.length} events!`);
+                    } catch (err) { alert('Error parsing file: ' + err.message); }
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function downloadExcelTemplate() {
+            const wb = XLSX.utils.book_new();
+            const wsData = [
+                ['Date', 'Title', 'Category', 'Description', 'Start Time', 'End Time', 'Guests', 'Calendars'],
+                ['01-01-2025', 'Morning Yoga Session', 'Yoga Class', 'Daily morning practice', '06:00', '07:00', '20', 'Public'],
+                ['05-01-2025', 'Meditation Workshop', 'Meditation', 'Evening group meditation', '18:00', '19:30', '15', 'Member,Public'],
+                ['10-01-2025', 'Special Satsang', 'Satsang', 'Monthly spiritual gathering', '10:00', '12:00', '50', 'Special']
+            ];
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+            // Set column widths
+            ws['!cols'] = [
+                { wch: 12 }, // Date
+                { wch: 25 }, // Title
+                { wch: 15 }, // Category
+                { wch: 30 }, // Description
+                { wch: 12 }, // Start Time
+                { wch: 12 }, // End Time
+                { wch: 10 }, // Guests
+                { wch: 20 }  // Calendars
+            ];
+
+            XLSX.utils.book_append_sheet(wb, ws, 'Events');
+            XLSX.writeFile(wb, 'event_import_template.xlsx');
+        }
+
+        function handleTextImport() {
+            const text = document.getElementById('bulkText').value;
+            if (!text) return;
+            const lines = text.split('\n');
+            const imported = lines.map(line => {
+                const [title, date, category] = line.split(',').map(s => s.trim());
+                if (!title || !date) return null;
+                return {
+                    id: Date.now().toString() + Math.random(),
+                    title, date, category: category || 'Yoga Class',
+                    calendars: ['Public'], status: 'Planned'
+                };
+            }).filter(e => e);
+            events = [...events, ...imported];
+            localStorage.setItem('arivuthirukovil_events', JSON.stringify(events));
+            document.getElementById('bulkText').value = '';
+            renderCalendar();
+            alert(`Imported ${imported.length} events from text!`);
+        }
+
+        function toggleAdmin() {
+            // If trying to enable admin mode, check password first
+            if (!isAdmin) {
+                const password = prompt('Enter admin password:');
+                if (password !== 'skypblr123') {
+                    alert('Incorrect password!');
+                    return;
+                }
+            }
+
+            isAdmin = !isAdmin;
+            const btn = document.getElementById('adminBtn');
+            const controls = document.getElementById('adminControls');
+            const calSettings = document.getElementById('calSettingsBtn');
+            const importControls = document.getElementById('importControls');
+
+            if (isAdmin) {
+                btn.classList.add('bg-red-500', 'text-white');
+                btn.innerHTML = `<i class="fas fa-times mr-2"></i>${t('exitAdmin')}`;
+                controls.classList.remove('hidden');
+                calSettings.classList.remove('hidden');
+                importControls.classList.remove('hidden');
+            } else {
+                btn.classList.remove('bg-red-500', 'text-white');
+                btn.innerHTML = `<i class="fas fa-user-shield mr-2"></i>${t('admin')}`;
+                controls.classList.add('hidden');
+                calSettings.classList.add('hidden');
+                importControls.classList.add('hidden');
+            }
+        }
+
+        function changeMonth(delta) {
+            currentDate.setMonth(currentDate.getMonth() + delta);
+            renderCalendar();
+        }
+
+        function updateStats() {
+            document.getElementById('totalEvents').innerText = events.length;
+            const currentMonth = currentDate.getMonth();
+            const monthEvents = events.filter(e => new Date(e.date).getMonth() === currentMonth).length;
+            document.getElementById('monthEvents').innerText = monthEvents;
+        }
+
+        function shareWhatsApp() {
+            const modalContent = document.getElementById('modalContent');
+            const title = modalContent.querySelector('h2').innerText;
+            const date = modalContent.querySelector('p').innerText;
+            const text = encodeURIComponent(`📅 *Event Invitation*\n\n*Name:* ${title}\n*Date:* ${date}\n\nJoin us for this amazing event!`);
+            window.open(`https://wa.me/?text=${text}`, '_blank');
+        }
+
+        document.getElementById('eventForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const calendarNodes = document.querySelectorAll('input[name="targetCalendars"]:checked');
+            const targetCalendars = Array.from(calendarNodes).map(n => n.value);
+
+            // Convert 12-hour format to 24-hour format
+            function convertTo24Hour(hour, minute, ampm) {
+                let h = parseInt(hour) || 0;
+                let m = parseInt(minute) || 0;
+                if (ampm === 'PM' && h !== 12) h += 12;
+                if (ampm === 'AM' && h === 12) h = 0;
+                return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+            }
+
+            const startHour = document.getElementById('startHour').value;
+            const startMinute = document.getElementById('startMinute').value;
+            const startAMPM = document.getElementById('startAMPM').value;
+            const endHour = document.getElementById('endHour').value;
+            const endMinute = document.getElementById('endMinute').value;
+            const endAMPM = document.getElementById('endAMPM').value;
+
+            const data = {
+                id: Date.now().toString(),
+                title: document.getElementById('title').value,
+                date: document.getElementById('date').value,
+                startTime: convertTo24Hour(startHour, startMinute, startAMPM),
+                endTime: convertTo24Hour(endHour, endMinute, endAMPM),
+                category: document.getElementById('category').value,
+                description: document.getElementById('description').value,
+                guests: document.getElementById('guests').value,
+                calendars: targetCalendars,
+                status: 'Planned'
+            };
+
+            events.push(data);
+            localStorage.setItem('arivuthirukovil_events', JSON.stringify(events));
+
+            document.getElementById('eventForm').reset();
+            renderCalendar();
+        });
+
+        // --- Export Logic ---
+        async function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.setFontSize(16);
+            doc.text("Perambalur Arivuthirukovil - Event Summary", 14, 15);
+
+            // Sort events by date and time
+            const sortedEvents = [...events].sort((a, b) => {
+                const dateCompare = a.date.localeCompare(b.date);
+                if (dateCompare !== 0) return dateCompare;
+                return (a.startTime || '00:00').localeCompare(b.startTime || '00:00');
+            });
+
+            const rows = sortedEvents.map(e => [
+                formatDate(e.date),
+                e.startTime || '-',
+                e.endTime || '-',
+                e.title,
+                e.category,
+                e.description || 'No description',
+                (e.guests || 0) + " Guests"
+            ]);
+
+            doc.autoTable({
+                head: [['Date', 'Start', 'End', 'Title', 'Category', 'Description', 'Guests']],
+                body: rows,
+                startY: 25,
+                styles: { fontSize: 7 },
+                columnStyles: {
+                    0: { cellWidth: 20 },
+                    1: { cellWidth: 15 },
+                    2: { cellWidth: 15 },
+                    3: { cellWidth: 30 },
+                    4: { cellWidth: 25 },
+                    5: { cellWidth: 60 },
+                    6: { cellWidth: 15 }
+                }
+            });
+            doc.save("events_summary.pdf");
+        }
+
+        async function exportWord() {
+            const { Document, Packer, Paragraph, TextRun, HeadingLevel } = window.docx;
+            const doc = new Document({
+                sections: [{
+                    children: [
+                        new Paragraph({ text: "Perambalur Arivuthirukovil", heading: HeadingLevel.TITLE }),
+                        new Paragraph({ text: "Event Summary Report", heading: HeadingLevel.HEADING_1 }),
+                        ...events.sort((a, b) => {
+                            const dateCompare = a.date.localeCompare(b.date);
+                            if (dateCompare !== 0) return dateCompare;
+                            return (a.startTime || '00:00').localeCompare(b.startTime || '00:00');
+                        }).map(e => new Paragraph({
+                            children: [
+                                new TextRun({ text: `${formatDate(e.date)} | ${e.startTime || '-'} - ${e.endTime || '-'} | ${e.title}`, bold: true }),
+                                new TextRun({
+                                    text: `\nCategory: ${e.category}\nDescription: ${e.description || 'No description'}\nGuests: ${e.guests || 0}\n\n`,
+                                    break: 1
+                                })
+                            ]
+                        }))
+                    ]
+                }]
+            });
+            const blob = await Packer.toBlob(doc);
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "events_summary.docx";
+            link.click();
+        }
+
+        async function exportJPG() {
+            // Create a clean summary view
+            const summaryDiv = document.createElement('div');
+            summaryDiv.style.cssText = 'width: 1200px; padding: 60px; background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%); font-family: Arial, sans-serif;';
+
+            const month = currentDate.getMonth();
+            const year = currentDate.getFullYear();
+            const monthName = new Intl.DateTimeFormat(currentLanguage === 'ta' ? 'ta-IN' : 'en-US', { month: 'long', year: 'numeric' }).format(currentDate);
+
+            const filteredEvents = events.filter(e => {
+                const targetCals = e.calendars || ['Public'];
+                return targetCals.some(c => selectedCalendars.includes(c));
+            }).filter(e => {
+                const eventDate = new Date(e.date);
+                return eventDate.getMonth() === month && eventDate.getFullYear() === year;
+            }).sort((a, b) => {
+                const dateCompare = a.date.localeCompare(b.date);
+                if (dateCompare !== 0) return dateCompare;
+                return (a.startTime || '00:00').localeCompare(b.startTime || '00:00');
+            });
+
+            summaryDiv.innerHTML = `
+                <div style="text-align: center; margin-bottom: 40px;">
+                    <div style="display: inline-flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                        <div style="width: 50px; height: 50px; background: #0d9488; border-radius: 12px; display: flex; align-items: center; justify-center;">
+                            <span style="font-size: 24px;">🕉️</span>
+                        </div>
+                        <div style="text-align: left;">
+                            <h1 style="margin: 0; font-size: 28px; font-weight: 900; color: #134e4a;">Perambalur</h1>
+                            <p style="margin: 0; font-size: 14px; font-weight: 700; color: #0d9488; letter-spacing: 2px;">ARIVUTHIRUKOVIL</p>
+                        </div>
+                    </div>
+                    <h2 style="font-size: 32px; font-weight: 800; color: #0f766e; margin: 20px 0 10px 0;">${monthName}</h2>
+                    <p style="font-size: 16px; color: #14b8a6; font-weight: 600;">${filteredEvents.length} Events Scheduled</p>
+                </div>
+                <div style="background: white; border-radius: 20px; padding: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+                    ${filteredEvents.length === 0 ?
+                    '<p style="text-align: center; color: #94a3b8; font-size: 18px; padding: 40px;">No events scheduled for this month</p>' :
+                    filteredEvents.map((e, i) => `
+                            <div style="display: flex; gap: 20px; padding: 20px; border-bottom: ${i < filteredEvents.length - 1 ? '2px solid #f0fdfa' : 'none'}; align-items: start;">
+                                <div style="min-width: 80px; text-align: center; background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);">
+                                    <div style="font-size: 28px; font-weight: 900; line-height: 1;">${new Date(e.date).getDate()}</div>
+                                    <div style="font-size: 12px; font-weight: 600; opacity: 0.9; margin-top: 5px;">${new Date(e.date).toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}</div>
+                                </div>
+                                <div style="flex: 1;">
+                                    <h3 style="margin: 0 0 8px 0; font-size: 20px; font-weight: 800; color: #134e4a;">${e.title}</h3>
+                                    <div style="display: flex; gap: 15px; margin-bottom: 8px;">
+                                        <span style="display: inline-block; padding: 4px 12px; background: #ccfbf1; color: #0f766e; border-radius: 20px; font-size: 12px; font-weight: 700;">${e.category}</span>
+                                        <span style="color: #64748b; font-size: 14px;">📅 ${formatDate(e.date)}</span>
+                                        ${e.guests ? `<span style="color: #64748b; font-size: 14px;">👥 ${e.guests} guests</span>` : ''}
+                                    </div>
+                                    ${e.description ? `<p style="margin: 8px 0 0 0; color: #475569; font-size: 14px; line-height: 1.6;">${e.description}</p>` : ''}
+                                </div>
+                            </div>
+                        `).join('')
+                }
+                </div>
+                <div style="text-align: center; margin-top: 30px; color: #64748b; font-size: 12px;">
+                    Generated on ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                </div>
+            `;
+
+            document.body.appendChild(summaryDiv);
+            const canvas = await html2canvas(summaryDiv, {
+                scale: 2,
+                backgroundColor: null,
+                logging: false
+            });
+            document.body.removeChild(summaryDiv);
+
+            const link = document.createElement('a');
+            link.download = `events_summary_${monthName.replace(' ', '_')}.jpg`;
+            link.href = canvas.toDataURL('image/jpeg', 0.95);
+            link.click();
+        }
+
+        // Dropdown toggle
+        document.querySelector('.dropdown button').addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.querySelector('.dropdown-content').classList.toggle('hidden');
+        });
+        window.onclick = () => document.querySelector('.dropdown-content').classList.add('hidden');
+
+        fetchEvents();
+        updateUILanguage();
+        renderOptions();
+    </script>
 </body>
+
+
 </html>
+
+
+
+
+
+
+
